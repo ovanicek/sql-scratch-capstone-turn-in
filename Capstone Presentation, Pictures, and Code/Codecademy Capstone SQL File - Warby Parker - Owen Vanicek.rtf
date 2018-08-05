@@ -1,0 +1,180 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf600
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 HelveticaNeue;}
+{\colortbl;\red255\green255\blue255;\red53\green53\blue53;}
+{\*\expandedcolortbl;;\cssrgb\c27059\c27059\c27059;}
+\margl1440\margr1440\vieww10960\viewh14440\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 1)\
+-- Using the * and a LIMIT statement, the query returns all columns from only the first ten rows.\
+-- Q Answer: question, user_id, response\
+\
+SELECT *\
+FROM survey\
+LIMIT 10;\
+\
+2)\
+-- Using the COUNT, DISTINCT, and GROUP BY statements, the query returns each question and the number of unique responses each question received.\
+-- Q Answer: Q1 - 500, Q2 - 475, Q3 - 380, Q4 - 361, Q5 - 270\
+\
+SELECT question,\
+	COUNT(DISTINCT user_id) AS 'Responses'\
+FROM survey\
+GROUP BY 1;\
+\
+4)\
+-- Using nearly the same syntax as we did in Q1, we can return all the columns for each table in the Home_Try_On Funnel. \
+-- Q Answer: For Quiz table: user_id, style, fit, shape, color\
+-- Q Answer: For Home_Try_On table: user_id, number_of_pairs, address\
+-- Q Answer: For Purchase table: user_id, product_id, style, model_name, color, price\
+\
+SELECT *\
+FROM quiz\
+LIMIT 5;\
+\
+SELECT *\
+FROM home_try_on\
+LIMIT 5;\
+\
+SELECT *\
+FROM purchase\
+LIMIT 5;\
+\
+5)\
+-- Using a series of LEFT JOINS, I have gone about combining each table on the primary key 'user_id.' Progressively joining down the funnel prevents unwanted rows as well.\
+-- Results for 'is_home_try_on' and 'is_purchase' are shown in binary terms. 1 = True, 0 = False.\
+-- Prompt Results: Check Query Result\
+\
+SELECT DISTINCT q.user_id,\
+	h.user_id IS NOT NULL AS 'is_home_try_on',\
+  h.number_of_pairs,\
+  p.user_id IS NOT NULL AS 'is_purchase'\
+FROM quiz AS 'q'\
+LEFT JOIN home_try_on AS 'h'\
+		ON q.user_id = h.user_id\
+LEFT JOIN purchase AS 'p'\
+		ON p.user_id = q.user_id\
+LIMIT 10;\
+\
+\
+\
+6)\
+-- Continuing using our LEFT JOINS, I have gone about calculating overall conversion rates by aggregating across all rows.I have done by using WITH and SUM to aggregate across our previous table.\
+-- Results: quiz_to_home - 75% conversion rate, home_to_purchase - 66% conversion rate\
+\
+With funnels AS (\
+SELECT DISTINCT q.user_id,\
+	h.user_id IS NOT NULL AS 'is_home_try_on',\
+  h.number_of_pairs,\
+  p.user_id IS NOT NULL AS 'is_purchase'\
+FROM quiz AS 'q'\
+LEFT JOIN home_try_on AS 'h'\
+		ON q.user_id = h.user_id\
+LEFT JOIN purchase AS 'p'\
+		ON p.user_id = q.user_id)\
+SELECT COUNT(*) AS 'quiz_total',\
+SUM(is_home_try_on) AS 'num_home_try_on',\
+SUM(is_purchase) AS 'num_purchase',\
+	ROUND(1.0 * SUM(is_home_try_on) / COUNT(user_id),2) AS 'quiz_to_home',\
+	ROUND(1.0 * SUM(is_purchase) / SUM(is_home_try_on),2) AS 'home_to_purchase'\
+FROM funnels;\
+\
+\
+-- By adding a GROUP BY statement to our previous query, we can segment and get conversion rates for TEST A and TEST B to compare directly. \
+-- Results: reference the attached table.\
+\
+With funnels AS (\
+SELECT DISTINCT q.user_id,\
+	h.user_id IS NOT NULL AS 'is_home_try_on',\
+  h.number_of_pairs,\
+  p.user_id IS NOT NULL AS 'is_purchase'\
+FROM quiz AS 'q'\
+LEFT JOIN home_try_on AS 'h'\
+		ON q.user_id = h.user_id\
+LEFT JOIN purchase AS 'p'\
+		ON p.user_id = q.user_id)\
+SELECT COUNT(*) AS 'quiz_total',\
+SUM(is_home_try_on) AS 'num_home_try_on',\
+SUM(is_purchase) AS 'num_purchase',\
+	ROUND(1.0 * SUM(is_home_try_on) / COUNT(user_id),2) AS 'quiz_to_home',\
+	ROUND(1.0 * SUM(is_purchase) / SUM(is_home_try_on),2) AS 'home_to_purchase', \
+number_of_pairs\
+FROM funnels\
+GROUP BY number_of_pairs;\
+\
+\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1 \cf2 SELECT style, COUNT(*)\
+FROM quiz\
+GROUP BY style;\
+\
+SELECT fit, COUNT(*)\
+FROM quiz\
+GROUP BY fit;\
+\
+SELECT shape, COUNT(*)\
+FROM quiz\
+GROUP BY shape;\
+\
+SELECT color, COUNT(*)\
+FROM quiz\
+GROUP BY color;\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0 \cf0 \
+\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1 \cf2 SELECT product_id, COUNT(*)\
+FROM purchase\
+GROUP BY product_id;\
+\
+SELECT style, COUNT(*)\
+FROM purchase\
+GROUP BY style;\
+\
+SELECT model_name, COUNT(*)\
+FROM purchase\
+GROUP BY model_name;\
+\
+SELECT color, COUNT(*)\
+FROM purchase\
+GROUP BY color;\
+\
+SELECT price, COUNT(*)\
+FROM purchase\
+GROUP BY price;\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0 \cf0 \
+\
+\pard\pardeftab560\slleading20\partightenfactor0
+
+\f1 \cf2 SELECT AVG(price), number_of_pairs\
+FROM home_try_on\
+INNER JOIN purchase ON home_try_on.user_id = purchase.user_id\
+GROUP BY number_of_pairs;\
+\
+\
+SELECT style, COUNT(*), \
+	ROUND(SUM(price),2) AS 'Revenue', 							ROUND(AVG(price),2) AS 'AVG_Price', 						number_of_pairs\
+FROM purchase\
+	INNER JOIN home_try_on \
+  	ON home_try_on.user_id = purchase.user_id\
+WHERE style LIKE 'Women%'\
+GROUP BY number_of_pairs;\
+\
+SELECT style, COUNT(*), \
+	ROUND(SUM(price),2) AS 'Revenue', 							ROUND(AVG(price),2) AS 'AVG_Price', 						number_of_pairs\
+FROM purchase\
+	INNER JOIN home_try_on \
+  	ON home_try_on.user_id = purchase.user_id\
+WHERE style LIKE 'Men%'\
+GROUP BY number_of_pairs;\
+\
+
+\f0 \cf0 \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+}
